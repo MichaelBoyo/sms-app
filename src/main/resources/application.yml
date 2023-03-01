@@ -1,6 +1,6 @@
 decoded:
     cache:
-        port: 11162
-        host: redis-11162.c114.us-east-1-4.ec2.cloud.redislabs.com
-        password: AdZFxwlBmWU81qvKyz4E7ccYbrMyiHsX
+        port: 7186
+        host: containers-us-west-44.railway.app
+        password: KANkYPy0qh4LNGt50SKE
         default-ttl: 180
