@@ -1,51 +1,46 @@
 package com.decoded.ussd.services;
 
+import com.decoded.ussd.*;
 import com.decoded.ussd.data.Menu;
 import com.decoded.ussd.data.MenuOption;
 import com.decoded.ussd.data.UssdSession;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.StringSubstitutor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class UssdRoutingService {
+    private final UserRepository userRepository;
+    private final WalletRepository walletRepository;
+    private TransactionRepository transactionRepository;
+    private final MenuService menuService;
+    private final SessionService sessionService;
 
-    @Autowired
-    private MenuService menuService;
 
-    @Autowired
-    private SessionService sessionService;
-
-    /**
-     * 
-     * @param sessionId
-     * @param serviceCode
-     * @param phoneNumber
-     * @param text
-     * @return
-     * @throws IOException
-     */
     public String menuLevelRouter(String sessionId, String serviceCode, String phoneNumber, String text)
             throws IOException {
+        if (!userRepository.existsUserByPhoneNumber(phoneNumber)) {
+            User user = new User();
+            user.setPhoneNumber(phoneNumber);
+            user.setWallet(new Wallet());
+        }
+
         Map<String, Menu> menus = menuService.loadMenus();
         UssdSession session = checkAndSetSession(sessionId, serviceCode, phoneNumber, text);
-        /**
-         * Check if response has some value
-         */
         return text.length() > 0 ? getNextMenuItem(session, menus) : menus.get(session.getCurrentMenuLevel()).getText();
     }
 
-    /**
-     * 
-     * @param session
-     * @param menus
-     * @return
-     * @throws IOException
-     */
+
     public String getNextMenuItem(UssdSession session, Map<String, Menu> menus) throws IOException {
         String[] levels = session.getText().split("\\*");
         String lastValue = levels[levels.length - 1];
@@ -59,26 +54,16 @@ public class UssdRoutingService {
         return "CON ";
     }
 
-    /**
-     * 
-     * @param menuLevel
-     * @return
-     * @throws IOException
-     */
+
     public String getMenu(String menuLevel) throws IOException {
         return menuService.loadMenus().get(menuLevel).getText();
     }
 
-    /**
-     * 
-     * @param menuOption
-     * @return
-     * @throws IOException
-     */
+
     public String processMenuOption(UssdSession session, MenuOption menuOption) throws IOException {
         switch (menuOption.getType()) {
             case "response":
-                return processMenuOptionResponses(menuOption);
+                return processMenuOptionResponses(menuOption, session.getPhoneNumber());
             case "level":
                 updateSessionMenuLevel(session, menuOption.getNextMenuLevel());
                 return getMenu(menuOption.getNextMenuLevel());
@@ -87,62 +72,66 @@ public class UssdRoutingService {
         }
     }
 
-    /**
-     * 
-     * @param menuOption
-     * @return
-     */
-    public String processMenuOptionResponses(MenuOption menuOption) {
+
+    public String processMenuOptionResponses(MenuOption menuOption, String phoneNumber) {
         String response = menuOption.getResponse();
         Map<String, String> variablesMap = new HashMap<>();
 
+        User user = userRepository.findUserByPhoneNumber(phoneNumber).orElse(null);
+        assert user != null;
         switch (menuOption.getAction()) {
-            case PROCESS_ACC_BALANCE:
-                variablesMap.put("account_balance", "10000");
-                break;
-            case PROCESS_ACC_NUMBER:
-                variablesMap.put("account_number", "123412512");
-                break;
-            case PROCESS_ACC_PHONE_NUMBER:
-                variablesMap.put("phone_number", "254702759950");
-                break;
+            case PROCESS_ACC_BALANCE -> variablesMap.put("account_balance", "10000");
+
+
+            case PROCESS_DEPOSIT -> {
+
+                Wallet wallet = user.getWallet();
+                Transaction transaction = Transaction.builder()
+                        .amount(BigDecimal.valueOf(1000))
+                        .type(TransactionType.DEPOSIT)
+                        .build();
+                transaction = transactionRepository.save(transaction);
+                wallet.getTransactionHistory().add(transaction);
+                wallet = walletRepository.save(wallet);
+                user.setWallet(wallet);
+                userRepository.save(user);
+
+
+                variablesMap.put("balance", String.valueOf(getBalance(user.getWallet())));
+            }
+
+            case PROCESS_ACC_PHONE_NUMBER -> variablesMap.put("phone_number", "254702759950");
+
         }
 
         response = replaceVariable(variablesMap, response);
         return response;
     }
 
-    /**
-     * 
-     * @param variablesMap
-     * @param response
-     * @return
-     */
+    private BigDecimal getBalance(Wallet wallet) {
+        BigDecimal bal = BigDecimal.ZERO;
+        for (Transaction transaction : wallet.getTransactionHistory()) {
+            switch (transaction.getType()) {
+                case DEPOSIT -> bal = bal.add(transaction.getAmount());
+                case WITHDRAWAL -> bal = bal.subtract(transaction.getAmount());
+            }
+        }
+
+        return bal;
+    }
+
+
     public String replaceVariable(Map<String, String> variablesMap, String response) {
         return new StringSubstitutor(variablesMap).replace(response);
     }
 
-    /**
-     * 
-     * @param session
-     * @param menuLevel
-     * @return
-     */
     public UssdSession updateSessionMenuLevel(UssdSession session, String menuLevel) {
         session.setPreviousMenuLevel(session.getCurrentMenuLevel());
         session.setCurrentMenuLevel(menuLevel);
         return sessionService.update(session);
     }
 
-    /**
-     * Check, Set or update the existing session with the provided Session Id
-     * 
-     * @param sessionId
-     * @param serviceCode
-     * @param phoneNumber
-     * @param text
-     * @return
-     */
+
     public UssdSession checkAndSetSession(String sessionId, String serviceCode, String phoneNumber, String text) {
         UssdSession session = sessionService.get(sessionId);
 

@@ -10,9 +10,6 @@ import lombok.Data;
 @Data
 @RedisHash(value = "sessions", timeToLive = 180)
 public class UssdSession implements Serializable {
-    /**
-     *
-     */
     private static final long serialVersionUID = 1L;
 
     @Id

@@ -33,11 +33,7 @@ public class MenuService {
         return resultStringBuilder.toString();
     }
 
-    /**
-     * 
-     * @return
-     * @throws IOException
-     */
+
     public Map<String, Menu> loadMenus() throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         Resource resource = resourceLoader.getResource("classpath:menu.json");
