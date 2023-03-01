@@ -1,4 +1,4 @@
-package com.decoded.ussd;
+package com.decoded.ussd.data.models;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,5 +1,6 @@
-package com.decoded.ussd;
+package com.decoded.ussd.data.repositories;
 
+import com.decoded.ussd.data.models.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Optional;

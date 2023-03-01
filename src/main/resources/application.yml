@@ -1,9 +1,8 @@
 decoded:
     cache:
-        port: 7186
-        host: containers-us-west-44.railway.app
-        password: KANkYPy0qh4LNGt50SKE
-        default-ttl: 180
+        port: ${REDIS_PORT}
+        host: ${REDIS_HOST}
+        password: ${REDIS_PASSWORD}
 
 spring:
     data:

@@ -1,5 +1,6 @@
-package com.decoded.ussd;
+package com.decoded.ussd.data.models;
 
+import com.decoded.ussd.data.enums.TransactionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

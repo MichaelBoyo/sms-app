@@ -20,6 +20,5 @@ public class ApplicationConfiguration {
         private String host;
         private String password;
         private String defaultTtl;
-        // private Map<String, String> cachesTtl;
     }
 }

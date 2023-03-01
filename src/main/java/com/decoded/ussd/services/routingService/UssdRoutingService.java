@@ -1,49 +1,55 @@
-package com.decoded.ussd.services;
+package com.decoded.ussd.services.routingService;
 
-import com.decoded.ussd.*;
-import com.decoded.ussd.data.Menu;
-import com.decoded.ussd.data.MenuOption;
-import com.decoded.ussd.data.UssdSession;
+import com.decoded.ussd.data.models.User;
+import com.decoded.ussd.data.repositories.UserRepository;
+import com.decoded.ussd.data.models.Wallet;
+import com.decoded.ussd.data.models.Menu;
+import com.decoded.ussd.data.models.MenuOption;
+import com.decoded.ussd.data.models.UssdSession;
+import com.decoded.ussd.data.dtos.DepositRequest;
+import com.decoded.ussd.data.dtos.GetBalanceRequest;
+import com.decoded.ussd.data.dtos.WithdrawalRequest;
+import com.decoded.ussd.services.sessionService.SessionServiceImpl;
+import com.decoded.ussd.services.userService.UserService;
+import com.decoded.ussd.services.walletService.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class UssdRoutingService {
+public class UssdRoutingService implements RoutingService {
+    private final WalletService walletService;
     private final UserRepository userRepository;
-    private final WalletRepository walletRepository;
-    private final TransactionRepository transactionRepository;
-    private final MenuService menuService;
-    private final SessionService sessionService;
+    private final UserService userService;
+    private final com.decoded.ussd.services.menuService.iMenuService iMenuService;
+    private final SessionServiceImpl sessionServiceImpl;
 
 
+    @Override
     public String menuLevelRouter(String sessionId, String serviceCode, String phoneNumber, String text)
             throws IOException {
-        if (!userRepository.existsUserByPhoneNumber(phoneNumber)) {
+        if (!userService.existsUserByPhoneNumber(phoneNumber)) {
             User user = new User();
             user.setPhoneNumber(phoneNumber);
             user.setWallet(new Wallet());
-            userRepository.save(user);
+            userService.save(user);
         }
 
-        Map<String, Menu> menus = menuService.loadMenus();
+        Map<String, Menu> menus = iMenuService.loadMenus();
         UssdSession session = checkAndSetSession(sessionId, serviceCode, phoneNumber, text);
         return text.length() > 0 ? getNextMenuItem(session, menus) : menus.get(session.getCurrentMenuLevel()).getText();
     }
 
 
+    @Override
     public String getNextMenuItem(UssdSession session, Map<String, Menu> menus) throws IOException {
         String[] levels = session.getText().split("\\*");
         String lastValue = levels[levels.length - 1];
@@ -58,52 +64,63 @@ public class UssdRoutingService {
     }
 
 
+    @Override
     public String getMenu(String menuLevel) throws IOException {
-        return menuService.loadMenus().get(menuLevel).getText();
+        return iMenuService.loadMenus().get(menuLevel).getText();
     }
 
 
+    @Override
     public String processMenuOption(UssdSession session, MenuOption menuOption) throws IOException {
         switch (menuOption.getType()) {
-            case "response":
+            case "response" -> {
                 return processMenuOptionResponses(menuOption, session);
-            case "level":
+            }
+            case "level" -> {
                 updateSessionMenuLevel(session, menuOption.getNextMenuLevel());
                 return getMenu(menuOption.getNextMenuLevel());
-            default:
+            }
+            default -> {
                 return "CON ";
+            }
         }
     }
 
 
+    @Override
     public String processMenuOptionResponses(MenuOption menuOption, UssdSession session) {
         String response = menuOption.getResponse();
         Map<String, String> variablesMap = new HashMap<>();
-        log.info("Deposit amount => {}", session.getText());
-        User user = userRepository.findUserByPhoneNumber(session.getPhoneNumber()).orElse(null);
-        assert user != null;
         switch (menuOption.getAction()) {
-            case PROCESS_ACC_BALANCE -> variablesMap.put("account_balance", "10000");
+            case PROCESS_WITHDRAW -> {
+                walletService.withDraw(WithdrawalRequest.builder()
+                        .phoneNumber(session.getPhoneNumber())
+                        .amount(BigDecimal.valueOf(1000))
+                        .build());
+                variablesMap.put("balance", String.valueOf(
+                        walletService.getBalance(GetBalanceRequest.builder()
+                                .phoneNumber(session.getPhoneNumber())
+                                .build())));
+            }
+
+            case PROCESS_BALANCE -> variablesMap.put("balance", String.valueOf(
+                    walletService.getBalance(GetBalanceRequest.builder()
+                            .phoneNumber(session.getPhoneNumber())
+                            .build())));
 
 
             case PROCESS_DEPOSIT -> {
-
-                Wallet wallet = user.getWallet();
-                Transaction transaction = Transaction.builder()
+                walletService.deposit(DepositRequest.builder()
+                        .phoneNumber(session.getPhoneNumber())
                         .amount(BigDecimal.valueOf(1000))
-                        .type(TransactionType.DEPOSIT)
-                        .build();
-                transaction = transactionRepository.save(transaction);
-                wallet.getTransactionHistory().add(transaction);
-                wallet = walletRepository.save(wallet);
-                user.setWallet(wallet);
-                userRepository.save(user);
-
-
-                variablesMap.put("balance", String.valueOf(getBalance(user.getWallet())));
+                        .build());
+                variablesMap.put("balance", String.valueOf(
+                        walletService.getBalance(GetBalanceRequest.builder()
+                                .phoneNumber(session.getPhoneNumber())
+                                .build())));
             }
 
-            case PROCESS_ACC_PHONE_NUMBER -> variablesMap.put("phone_number", user.getPhoneNumber());
+            case PROCESS_ACC_PHONE_NUMBER -> variablesMap.put("phone_number", session.getPhoneNumber());
 
         }
 
@@ -111,36 +128,27 @@ public class UssdRoutingService {
         return response;
     }
 
-    private BigDecimal getBalance(Wallet wallet) {
-        BigDecimal bal = BigDecimal.ZERO;
-        for (Transaction transaction : wallet.getTransactionHistory()) {
-            switch (transaction.getType()) {
-                case DEPOSIT -> bal = bal.add(transaction.getAmount());
-                case WITHDRAWAL -> bal = bal.subtract(transaction.getAmount());
-            }
-        }
 
-        return bal;
-    }
-
-
+    @Override
     public String replaceVariable(Map<String, String> variablesMap, String response) {
         return new StringSubstitutor(variablesMap).replace(response);
     }
 
+    @Override
     public UssdSession updateSessionMenuLevel(UssdSession session, String menuLevel) {
         session.setPreviousMenuLevel(session.getCurrentMenuLevel());
         session.setCurrentMenuLevel(menuLevel);
-        return sessionService.update(session);
+        return sessionServiceImpl.update(session);
     }
 
 
+    @Override
     public UssdSession checkAndSetSession(String sessionId, String serviceCode, String phoneNumber, String text) {
-        UssdSession session = sessionService.get(sessionId);
+        UssdSession session = sessionServiceImpl.getUssdSession(sessionId);
 
         if (session != null) {
             session.setText(text);
-            return sessionService.update(session);
+            return sessionServiceImpl.update(session);
         }
 
         session = new UssdSession();
@@ -151,6 +159,6 @@ public class UssdRoutingService {
         session.setServiceCode(serviceCode);
         session.setText(text);
 
-        return sessionService.createUssdSession(session);
+        return sessionServiceImpl.createUssdSession(session);
     }
 }

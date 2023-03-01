@@ -1,6 +1,6 @@
-package com.decoded.ussd.data;
+package com.decoded.ussd.data.models;
 
-import com.decoded.ussd.enums.MenuOptionAction;
+import com.decoded.ussd.data.enums.MenuOptionAction;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;

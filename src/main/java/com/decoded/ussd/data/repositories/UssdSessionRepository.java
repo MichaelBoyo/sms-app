@@ -1,6 +1,6 @@
-package com.decoded.ussd.repositories;
+package com.decoded.ussd.data.repositories;
 
-import com.decoded.ussd.data.UssdSession;
+import com.decoded.ussd.data.models.UssdSession;
 
 
 import org.springframework.data.repository.CrudRepository;

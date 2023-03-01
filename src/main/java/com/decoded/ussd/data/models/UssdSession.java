@@ -1,4 +1,4 @@
-package com.decoded.ussd.data;
+package com.decoded.ussd.data.models;
 
 import java.io.Serializable;
 

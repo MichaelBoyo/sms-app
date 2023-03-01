@@ -2,7 +2,7 @@ package com.decoded.ussd.services;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.decoded.ussd.data.UssdSession;
+import com.decoded.ussd.data.models.UssdSession;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,10 +14,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
-class SessionServiceITest {
+class SessionServiceImplITest {
 
     @Autowired
-    private SessionService sessionService = null;
+    private com.decoded.ussd.services.sessionService.SessionService SessionService = null;
 
     @Test
     void testCache() {

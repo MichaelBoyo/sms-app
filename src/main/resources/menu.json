@@ -38,7 +38,7 @@
     "menu_options": [
       {
         "type": "response",
-        "response": "END Your Deposit of N1000  is ${balance}",
+        "response": "END Your Deposit of N1000 is successful you balance is  N${balance}",
         "next_menu_level": null,
         "action": "PROCESS_DEPOSIT"
       }

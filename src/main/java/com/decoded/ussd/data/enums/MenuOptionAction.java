@@ -1,4 +1,4 @@
-package com.decoded.ussd.enums;
+package com.decoded.ussd.data.enums;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
