@@ -52,7 +52,7 @@
     "menu_options": [
       {
         "type": "response",
-        "response": "END Your Withdraw 0f N1000 of  is ${account_balance}",
+        "response": "END Your Withdraw 0f N1000 of  is ${balance}",
         "next_menu_level": null,
         "action": "PROCESS_WITHDRAW"
       }
