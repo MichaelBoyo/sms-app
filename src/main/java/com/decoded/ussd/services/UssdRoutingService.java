@@ -33,6 +33,7 @@ public class UssdRoutingService {
             User user = new User();
             user.setPhoneNumber(phoneNumber);
             user.setWallet(new Wallet());
+            userRepository.save(user);
         }
 
         Map<String, Menu> menus = menuService.loadMenus();
