@@ -100,7 +100,7 @@ public class UssdRoutingService {
                 variablesMap.put("balance", String.valueOf(getBalance(user.getWallet())));
             }
 
-            case PROCESS_ACC_PHONE_NUMBER -> variablesMap.put("phone_number", "254702759950");
+            case PROCESS_ACC_PHONE_NUMBER -> variablesMap.put("phone_number", user.getPhoneNumber());
 
         }
 
