@@ -4,3 +4,9 @@ decoded:
         host: containers-us-west-44.railway.app
         password: KANkYPy0qh4LNGt50SKE
         default-ttl: 180
+
+spring:
+    data:
+        mongodb:
+            uri: ${DB_URI}
+            database: ${DB}

@@ -27,11 +27,6 @@ public class IndexController {
         return menuService.loadMenus();
     }
 
-    @GetMapping(path = "")
-    public String index() {
-        return "Your have reached us";
-    }
-
 
     @PostMapping
     public String ussdIngress(@RequestParam String sessionId, @RequestParam String serviceCode,
