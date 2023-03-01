@@ -27,16 +27,13 @@ public class IndexController {
         return menuService.loadMenus();
     }
 
-    /**
-     * @return
-     */
     @GetMapping(path = "")
     public String index() {
         return "Your have reached us";
     }
 
 
-    @PostMapping(path = "ussd")
+    @PostMapping
     public String ussdIngress(@RequestParam String sessionId, @RequestParam String serviceCode,
                               @RequestParam String phoneNumber, @RequestParam String text) {
         try {
