@@ -5,6 +5,7 @@ import com.decoded.ussd.data.Menu;
 import com.decoded.ussd.data.MenuOption;
 import com.decoded.ussd.data.UssdSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -19,10 +20,11 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UssdRoutingService {
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
-    private TransactionRepository transactionRepository;
+    private final TransactionRepository transactionRepository;
     private final MenuService menuService;
     private final SessionService sessionService;
 
@@ -64,7 +66,7 @@ public class UssdRoutingService {
     public String processMenuOption(UssdSession session, MenuOption menuOption) throws IOException {
         switch (menuOption.getType()) {
             case "response":
-                return processMenuOptionResponses(menuOption, session.getPhoneNumber());
+                return processMenuOptionResponses(menuOption, session);
             case "level":
                 updateSessionMenuLevel(session, menuOption.getNextMenuLevel());
                 return getMenu(menuOption.getNextMenuLevel());
@@ -74,11 +76,11 @@ public class UssdRoutingService {
     }
 
 
-    public String processMenuOptionResponses(MenuOption menuOption, String phoneNumber) {
+    public String processMenuOptionResponses(MenuOption menuOption, UssdSession session) {
         String response = menuOption.getResponse();
         Map<String, String> variablesMap = new HashMap<>();
-
-        User user = userRepository.findUserByPhoneNumber(phoneNumber).orElse(null);
+        log.info("Deposit amount => {}", session.getText());
+        User user = userRepository.findUserByPhoneNumber(session.getPhoneNumber()).orElse(null);
         assert user != null;
         switch (menuOption.getAction()) {
             case PROCESS_ACC_BALANCE -> variablesMap.put("account_balance", "10000");
