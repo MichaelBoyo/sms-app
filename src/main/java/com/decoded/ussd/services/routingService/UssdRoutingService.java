@@ -1,7 +1,6 @@
 package com.decoded.ussd.services.routingService;
 
 import com.decoded.ussd.data.models.User;
-import com.decoded.ussd.data.repositories.UserRepository;
 import com.decoded.ussd.data.models.Wallet;
 import com.decoded.ussd.data.models.Menu;
 import com.decoded.ussd.data.models.MenuOption;
@@ -13,8 +12,10 @@ import com.decoded.ussd.services.sessionService.SessionServiceImpl;
 import com.decoded.ussd.services.userService.UserService;
 import com.decoded.ussd.services.walletService.WalletService;
 import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -27,8 +28,15 @@ import java.util.Map;
 @Slf4j
 public class UssdRoutingService implements RoutingService {
     private final WalletService walletService;
-    private final UserRepository userRepository;
     private final UserService userService;
+
+    @Value("withdraw.message.success")
+    private String successWithDrawMessage;
+
+    @Value("withdraw.message.fail")
+    private String failWithdrawMessage;
+
+
     private final com.decoded.ussd.services.menuService.iMenuService iMenuService;
     private final SessionServiceImpl sessionServiceImpl;
 
@@ -39,7 +47,11 @@ public class UssdRoutingService implements RoutingService {
         if (!userService.existsUserByPhoneNumber(phoneNumber)) {
             User user = new User();
             user.setPhoneNumber(phoneNumber);
-            user.setWallet(new Wallet());
+            Wallet wallet = Wallet.builder()
+                    .accountNo(phoneNumber.substring(phoneNumber.length() - 10))
+                    .build();
+            wallet = walletService.save(wallet);
+            user.setWallet(wallet);
             userService.save(user);
         }
 
@@ -92,40 +104,62 @@ public class UssdRoutingService implements RoutingService {
         String response = menuOption.getResponse();
         Map<String, String> variablesMap = new HashMap<>();
         switch (menuOption.getAction()) {
-            case PROCESS_WITHDRAW -> {
-                walletService.withDraw(WithdrawalRequest.builder()
-                        .phoneNumber(session.getPhoneNumber())
-                        .amount(BigDecimal.valueOf(1000))
-                        .build());
-                variablesMap.put("balance", String.valueOf(
-                        walletService.getBalance(GetBalanceRequest.builder()
-                                .phoneNumber(session.getPhoneNumber())
-                                .build())));
-            }
-
-            case PROCESS_BALANCE -> variablesMap.put("balance", String.valueOf(
-                    walletService.getBalance(GetBalanceRequest.builder()
-                            .phoneNumber(session.getPhoneNumber())
-                            .build())));
-
-
-            case PROCESS_DEPOSIT -> {
-                walletService.deposit(DepositRequest.builder()
-                        .phoneNumber(session.getPhoneNumber())
-                        .amount(BigDecimal.valueOf(1000))
-                        .build());
-                variablesMap.put("balance", String.valueOf(
-                        walletService.getBalance(GetBalanceRequest.builder()
-                                .phoneNumber(session.getPhoneNumber())
-                                .build())));
-            }
-
-            case PROCESS_ACC_PHONE_NUMBER -> variablesMap.put("phone_number", session.getPhoneNumber());
+            case PROCESS_WITHDRAW -> perform_withdrawal(1000.0, variablesMap, session);
+            case PROCESS_WITHDRAW_5 -> perform_withdrawal(5000.0, variablesMap, session);
+            case PROCESS_WITHDRAW_30 -> perform_withdrawal(30000.0, variablesMap, session);
+            case PROCESS_BALANCE -> returnBalance(session, variablesMap);
+            case PROCESS_DEPOSIT -> performDeposit(session, variablesMap, 1000.0);
+            case PROCESS_DEPOSIT_5 -> performDeposit(session, variablesMap, 5000.0);
+            case PROCESS_DEPOSIT_30 -> performDeposit(session, variablesMap, 30000.0);
+            case PROCESS_ACC_NUMBER ->
+                    variablesMap.put("account_number", userService.getAccountNumber(session.getPhoneNumber()));
 
         }
 
         response = replaceVariable(variablesMap, response);
         return response;
+    }
+
+    private void performDeposit(UssdSession session, Map<String, String> variablesMap, double amount) {
+        deposit(session, amount);
+        returnBalance(session, variablesMap);
+    }
+
+    private void perform_withdrawal(Double amount, Map<String, String> variablesMap, UssdSession session) {
+        if (walletService.hasEnoughMoney(BigDecimal.valueOf(amount), session.getPhoneNumber())) {
+            withdraw(session, amount);
+            returnBalance(session, variablesMap, String.format(successWithDrawMessage, amount));
+        } else {
+            returnBalance(session, variablesMap, failWithdrawMessage);
+        }
+    }
+
+    private void returnBalance(UssdSession session, Map<String, String> variablesMap, String message) {
+        variablesMap.put("balance", message + walletService.getBalance(GetBalanceRequest.builder()
+                .phoneNumber(session.getPhoneNumber())
+                .build()));
+    }
+
+
+    private void withdraw(UssdSession session, double amount) {
+        walletService.withDraw(WithdrawalRequest.builder()
+                .phoneNumber(session.getPhoneNumber())
+                .amount(BigDecimal.valueOf(amount))
+                .build());
+    }
+
+    private void returnBalance(UssdSession session, Map<String, String> variablesMap) {
+        variablesMap.put("balance", String.valueOf(
+                walletService.getBalance(GetBalanceRequest.builder()
+                        .phoneNumber(session.getPhoneNumber())
+                        .build())));
+    }
+
+    private void deposit(UssdSession session, Double amount) {
+        walletService.deposit(DepositRequest.builder()
+                .phoneNumber(session.getPhoneNumber())
+                .amount(BigDecimal.valueOf(amount))
+                .build());
     }
 
 

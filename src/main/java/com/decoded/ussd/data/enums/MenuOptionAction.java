@@ -1,17 +1,18 @@
 package com.decoded.ussd.data.enums;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum MenuOptionAction {
-
-    PROCESS_ACC_BALANCE("PROCESS_ACC_BALANCE"),
-    PROCESS_ACC_PHONE_NUMBER("PROCESS_ACC_PHONE_NUMBER"),
     PROCESS_ACC_NUMBER("PROCESS_ACC_NUMBER"),
-    PROCESS_WITHDRAW("PROCESS_WITHDRAW"),
     PROCESS_BALANCE("PROCESS_BALANCE"),
+    PROCESS_WITHDRAW("PROCESS_WITHDRAW"),
+    PROCESS_WITHDRAW_5("PROCESS_WITHDRAW_5"),
+    PROCESS_WITHDRAW_30("PROCESS_WITHDRAW_30"),
 
-    PROCESS_DEPOSIT("PROCESS_DEPOSIT");
+
+    PROCESS_DEPOSIT("PROCESS_DEPOSIT"),
+    PROCESS_DEPOSIT_5("PROCESS_DEPOSIT_5"),
+    PROCESS_DEPOSIT_30("PROCESS_DEPOSIT_30");
 
     private String action;
 

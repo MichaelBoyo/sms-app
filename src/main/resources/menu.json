@@ -6,9 +6,9 @@
     "menu_options": [
       {
         "type": "response",
-        "response": "END Your Account Number is ${phone_number}",
+        "response": "END Your Account Number is ${account_number}",
         "next_menu_level": null,
-        "action": "PROCESS_ACC_PHONE_NUMBER"
+        "action": "PROCESS_ACC_NUMBER"
       },
       {
         "type": "level",
@@ -29,18 +29,30 @@
         "action": "PROCESS_BALANCE"
       }
     ],
-    "max_selections": 3
+    "max_selections": 4
   },
   "2": {
     "id": 230,
     "menu_level": 2,
-    "text": "CON Enter Deposit  Amount",
+    "text": "CON Enter Deposit Amount\n1. 1,000\n2. 5,000\n3. 30,000\n use bank app to deposit above 30,000",
     "menu_options": [
       {
         "type": "response",
         "response": "END Your Deposit of N1000 is successful you balance is  N${balance}",
         "next_menu_level": null,
         "action": "PROCESS_DEPOSIT"
+      },
+       {
+        "type": "response",
+        "response": "END Your Deposit of N5000 is successful you balance is  N${balance}",
+        "next_menu_level": null,
+        "action": "PROCESS_DEPOSIT_5"
+      },
+       {
+        "type": "response",
+        "response": "END Your Deposit of N30,000 is successful you balance is  N${balance}",
+        "next_menu_level": null,
+        "action": "PROCESS_DEPOSIT_30"
       }
     ],
     "max_selections": 3
@@ -48,13 +60,25 @@
   "3": {
     "id": 230,
     "menu_level": 2,
-    "text": "CON Enter Withdraw  Amount",
+    "text": "CON Enter Withdrawal Amount\n1. 1,000\n2. 5,000\n3. 30,000\n use bank app to withdraw above 30,000",
     "menu_options": [
       {
         "type": "response",
-        "response": "END Your Withdraw 0f N1000 of  is ${balance}",
+        "response": "END   ${balance}",
         "next_menu_level": null,
         "action": "PROCESS_WITHDRAW"
+      },
+       {
+        "type": "response",
+        "response": "END  ${balance}",
+        "next_menu_level": null,
+        "action": "PROCESS_WITHDRAW_5"
+      },
+       {
+        "type": "response",
+        "response": "END  ${balance}",
+        "next_menu_level": null,
+        "action": "PROCESS_WITHDRAW_30"
       }
     ],
     "max_selections": 3

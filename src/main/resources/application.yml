@@ -9,3 +9,8 @@ spring:
         mongodb:
             uri: ${DB_URI}
             database: ${DB}
+
+withdraw:
+    message:
+        success: Your Withdrawal of N%d is successful you balance is N
+        fail: inSufficient Balance N

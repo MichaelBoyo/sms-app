@@ -6,4 +6,8 @@ public interface UserService {
     void save(User user);
 
     boolean existsUserByPhoneNumber(String phoneNumber);
+
+    String getAccountNumber(String phoneNumber);
+
+    User getUserByPhoneNumber(String phoneNumber);
 }
