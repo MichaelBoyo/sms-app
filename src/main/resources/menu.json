@@ -2,7 +2,7 @@
   "1": {
     "id": 230,
     "menu_level": 1,
-    "text": "CON What would you like to check\n1. Create Account\n2. Deposit \n3. Withdraw \n4. Check Balance",
+    "text": "CON What would you like to do\n1. Create Account\n2. Deposit \n3. Withdraw \n4. Check Balance",
     "menu_options": [
       {
         "type": "response",

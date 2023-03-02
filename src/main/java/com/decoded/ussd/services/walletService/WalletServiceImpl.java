@@ -1,21 +1,22 @@
 package com.decoded.ussd.services.walletService;
 
-import com.decoded.ussd.data.dtos.DepositRequest;
-import com.decoded.ussd.data.dtos.GetBalanceRequest;
-import com.decoded.ussd.data.dtos.WithdrawalRequest;
+import com.decoded.ussd.data.dtos.*;
 import com.decoded.ussd.data.enums.TransactionType;
 import com.decoded.ussd.data.models.Transaction;
 import com.decoded.ussd.data.models.User;
 import com.decoded.ussd.data.models.Wallet;
-import com.decoded.ussd.data.repositories.UserRepository;
 import com.decoded.ussd.data.repositories.TransactionRepository;
 import com.decoded.ussd.data.repositories.WalletRepository;
+import com.decoded.ussd.services.notification.SMSNotificationService;
 import com.decoded.ussd.services.userService.UserService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +25,7 @@ public class WalletServiceImpl implements WalletService {
     private final UserService userService;
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
+    private final SMSNotificationService smsNotificationService;
 
     @Override
     public void deposit(DepositRequest depositRequest) {
@@ -44,13 +46,51 @@ public class WalletServiceImpl implements WalletService {
         wallet = walletRepository.save(wallet);
         user.setWallet(wallet);
         userService.save(user);
+        String message = "of" + amount + "Successful";
+        switch (type) {
+            case DEPOSIT -> message = "Deposit " + message;
+            case WITHDRAWAL -> message = "Withdrawal " + message;
+        }
+
+        smsNotificationService.sendSms(SmsRequest.builder()
+                .messages(List.of(Message.builder()
+                        .destinations(List.of(Destination.builder()
+                                .to(phone)
+                                .build()))
+                        .from("ussd app")
+                        .text(message)
+                        .build()))
+                .build());
     }
+
+//    public static void main(String[] args) throws JsonProcessingException {
+//        ObjectMapper objectMapper = new ObjectMapper();
+//
+//        SmsRequest message = SmsRequest.builder()
+//                .messages(List.of(Message.builder()
+//                        .destinations(List.of(Destination.builder()
+//                                .to("0293848430")
+//                                .build()))
+//                        .from("ussd app")
+//                        .text("test text")
+//                        .build()))
+//                .build();
+//
+//        System.out.println(objectMapper.writeValueAsString(message));
+//        String bodyJson = String.format("{\"messages\":[{\"from\":\"%s\",\"destinations\":[{\"to\":\"%s\"}],\"text\":\"%s\"}]}",
+//                "mike",
+//                "0292933030",
+//                "text"
+//        );
+//        System.out.println(bodyJson);
+//    }
 
 
     @Override
     public void withDraw(WithdrawalRequest withdrawalRequest) {
         transact(TransactionType.WITHDRAWAL,
                 withdrawalRequest.getPhoneNumber(), withdrawalRequest.getAmount());
+
     }
 
 
