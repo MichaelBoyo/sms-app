@@ -10,4 +10,5 @@ spring:
             uri: ${DB_URI}
             database: ${DB}
 
-
+sms:
+    api-key: ${SMS_API_KEY}
