@@ -8,6 +8,7 @@ import com.decoded.ussd.data.models.UssdSession;
 import com.decoded.ussd.data.dtos.DepositRequest;
 import com.decoded.ussd.data.dtos.GetBalanceRequest;
 import com.decoded.ussd.data.dtos.WithdrawalRequest;
+import com.decoded.ussd.services.menuService.MenuService;
 import com.decoded.ussd.services.sessionService.SessionServiceImpl;
 import com.decoded.ussd.services.userService.UserService;
 import com.decoded.ussd.services.walletService.WalletService;
@@ -15,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -30,14 +30,7 @@ public class UssdRoutingService implements RoutingService {
     private final WalletService walletService;
     private final UserService userService;
 
-    @Value("withdraw.message.success")
-    private String successWithDrawMessage;
-
-    @Value("withdraw.message.fail")
-    private String failWithdrawMessage;
-
-
-    private final com.decoded.ussd.services.menuService.iMenuService iMenuService;
+    private final MenuService MenuService;
     private final SessionServiceImpl sessionServiceImpl;
 
 
@@ -55,7 +48,7 @@ public class UssdRoutingService implements RoutingService {
             userService.save(user);
         }
 
-        Map<String, Menu> menus = iMenuService.loadMenus();
+        Map<String, Menu> menus = MenuService.loadMenus();
         UssdSession session = checkAndSetSession(sessionId, serviceCode, phoneNumber, text);
         return text.length() > 0 ? getNextMenuItem(session, menus) : menus.get(session.getCurrentMenuLevel()).getText();
     }
@@ -78,7 +71,7 @@ public class UssdRoutingService implements RoutingService {
 
     @Override
     public String getMenu(String menuLevel) throws IOException {
-        return iMenuService.loadMenus().get(menuLevel).getText();
+        return MenuService.loadMenus().get(menuLevel).getText();
     }
 
 
@@ -128,8 +121,10 @@ public class UssdRoutingService implements RoutingService {
     private void perform_withdrawal(Double amount, Map<String, String> variablesMap, UssdSession session) {
         if (walletService.hasEnoughMoney(BigDecimal.valueOf(amount), session.getPhoneNumber())) {
             withdraw(session, amount);
-            returnBalance(session, variablesMap, String.format(successWithDrawMessage, amount));
+            String successWithDrawMessage = "Your Withdrawal of " + amount + " is successful you balance is N ";
+            returnBalance(session, variablesMap, successWithDrawMessage);
         } else {
+            String failWithdrawMessage = "insufficient Balance N ";
             returnBalance(session, variablesMap, failWithdrawMessage);
         }
     }

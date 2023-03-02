@@ -2,7 +2,7 @@ package com.decoded.ussd.controllers;
 
 import com.decoded.ussd.data.models.Menu;
 import com.decoded.ussd.services.routingService.RoutingService;
-import com.decoded.ussd.services.menuService.iMenuService;
+import com.decoded.ussd.services.menuService.MenuService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +16,7 @@ import java.util.Map;
 public class IndexController {
 
     @Autowired
-    private iMenuService iMenuService;
+    private MenuService MenuService;
 
     @Autowired
     private RoutingService routingService;
@@ -24,7 +24,7 @@ public class IndexController {
     @PostMapping(path = "menus")
     public Map<String, Menu> menusLoad() throws IOException {
         log.info("menus end point");
-        return iMenuService.loadMenus();
+        return MenuService.loadMenus();
     }
 
 
